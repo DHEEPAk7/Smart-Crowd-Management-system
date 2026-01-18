@@ -120,7 +120,7 @@ def initialize_models(device=None):
         device: torch.device or None (auto-detect)
     
     Returns:
-        tuple: (csrnet, lstm, yolo, device)
+        tuple: (csrnet, lstm, yolo, device, yolo_available)
     """
     if device is None:
         # Check GPU availability
@@ -154,5 +154,6 @@ def initialize_models(device=None):
     
     # YOLOv5
     yolo = load_yolo_model(device)
+    yolo_available = yolo is not None
     
-    return csrnet, lstm, yolo, device
+    return csrnet, lstm, yolo, device, yolo_available
