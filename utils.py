@@ -48,6 +48,10 @@ def list_available_cameras(max_index=5):
 
 
 def detect_people_yolo(frame, yolo_model):
+    """
+    Detect people using YOLOv5
+    
+    Args:
         frame: numpy array (H, W, 3)
         yolo_model: YOLOv5 model or None
     
