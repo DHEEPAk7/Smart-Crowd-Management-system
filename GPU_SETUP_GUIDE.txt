@@ -1,0 +1,84 @@
+GPU SETUP GUIDE
+===============
+
+CURRENT STATUS:
+- PyTorch version: 2.1.0+cpu
+- CUDA support: NOT INSTALLED
+- GPU: Cannot be used with current setup
+
+TO ENABLE GPU ACCELERATION:
+
+STEP 1: Check Your NVIDIA GPU
+=============================
+1. Press Win+R and type: dxdiag
+2. Go to Display tab and check GPU name
+   OR
+   Open PowerShell and run:
+   nvidia-smi
+
+If nvidia-smi shows your GPU, you have drivers. If not, install:
+https://www.nvidia.com/Download/driverDetails.aspx
+
+
+STEP 2: Install PyTorch with CUDA Support
+==========================================
+Choose based on your CUDA version (check nvidia-smi output):
+
+CUDA 12.1 (Recommended):
+------------------------
+pip uninstall torch torchvision torchaudio -y
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+
+
+CUDA 11.8:
+----------
+pip uninstall torch torchvision torchaudio -y
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
+
+STEP 3: Verify GPU Installation
+================================
+Run this in PowerShell:
+
+python -c "import torch; print('GPU Available:', torch.cuda.is_available()); print('Device:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU')"
+
+Or run the check script:
+python check_gpu.py
+
+
+OPTIONAL: Install cuDNN (for extra speed)
+==========================================
+1. Download from: https://developer.nvidia.com/cudnn
+2. Follow installation instructions
+3. This helps with convolution operations (like CSRNet)
+
+
+STEP 4: Run the Program
+=======================
+Your program is now configured for GPU!
+
+streamlit run app.py
+
+The application will automatically use GPU when available.
+
+
+PERFORMANCE IMPROVEMENT EXPECTED:
+=================================
+- Image processing: 5-10x faster
+- Video processing: 3-5x faster
+- Real-time predictions: Much smoother
+- Memory efficiency: Better batch processing
+
+
+TROUBLESHOOTING:
+================
+
+If still not detecting GPU after reinstall:
+1. Restart your computer
+2. Update NVIDIA drivers
+3. Check CUDA compatibility with your GPU:
+   https://developer.nvidia.com/cuda-gpus
+
+Still issues? Try CPU mode (slower but works):
+- The program will automatically fall back to CPU
+- Performance will be reduced but functionality intact

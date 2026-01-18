@@ -123,19 +123,34 @@ def initialize_models(device=None):
         tuple: (csrnet, lstm, yolo, device)
     """
     if device is None:
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        # Check GPU availability
+        if torch.cuda.is_available():
+            device = torch.device('cuda')
+            print(f"🚀 GPU detected: {torch.cuda.get_device_name(0)}")
+            print(f"   CUDA Version: {torch.version.cuda}")
+            print(f"   GPU Memory: {torch.cuda.get_device_properties(0).total_memory / 1e9:.2f} GB")
+        else:
+            device = torch.device('cpu')
+            print("⚠️ No GPU detected. Using CPU (slower)")
     
     print(f"Initializing models on {device}...")
+    
+    # Enable GPU optimizations if using CUDA
+    if device.type == 'cuda':
+        torch.cuda.empty_cache()
+        torch.backends.cudnn.benchmark = True
+        torch.backends.cudnn.enabled = True
+        print("✓ GPU optimizations enabled")
     
     # CSRNet
     csrnet = CSRNet().to(device)
     csrnet.eval()
-    print("✓ CSRNet initialized")
+    print("✓ CSRNet initialized on", device)
     
     # LSTM
     lstm = CrowdLSTM().to(device)
     lstm.eval()
-    print("✓ LSTM initialized")
+    print("✓ LSTM initialized on", device)
     
     # YOLOv5
     yolo = load_yolo_model(device)

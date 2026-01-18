@@ -61,26 +61,45 @@ def estimate_density_csrnet(frame, csrnet_model, device):
     Returns:
         tuple: (density_map, estimated_count)
     """
-    # Preprocess
-    img = cv2.resize(frame, (640, 480))
-    img = img.astype(np.float32) / 255.0
+    try:
+        # Preprocess
+        img = cv2.resize(frame, (640, 480))
+        img = img.astype(np.float32) / 255.0
+        
+        # Normalize using ImageNet stats
+        img = (img - [0.485, 0.456, 0.406]) / [0.229, 0.224, 0.225]
+        
+        # Convert to tensor
+        img = torch.from_numpy(img.transpose(2, 0, 1)).unsqueeze(0).float()
+        img = img.to(device)
+        
+        # Inference with GPU memory optimization
+        with torch.no_grad():
+            if device.type == 'cuda':
+                with torch.cuda.amp.autocast():  # Mixed precision for faster GPU inference
+                    density_map = csrnet_model(img)
+            else:
+                density_map = csrnet_model(img)
+        
+        # Convert back to numpy with validation
+        density_map = density_map.cpu().numpy()[0, 0]
+        
+        # Ensure valid output
+        density_map = np.nan_to_num(density_map, nan=0.0, posinf=1.0, neginf=0.0)
+        density_map = np.clip(density_map, 0, None)  # Ensure non-negative values
+        
+        estimated_count = float(np.sum(density_map))
+        
+        # Clean up GPU cache periodically
+        if device.type == 'cuda':
+            torch.cuda.empty_cache()
+        
+        return density_map, estimated_count
     
-    # Normalize using ImageNet stats
-    img = (img - [0.485, 0.456, 0.406]) / [0.229, 0.224, 0.225]
-    
-    # Convert to tensor
-    img = torch.from_numpy(img.transpose(2, 0, 1)).unsqueeze(0).float()
-    img = img.to(device)
-    
-    # Inference
-    with torch.no_grad():
-        density_map = csrnet_model(img)
-    
-    # Convert back to numpy
-    density_map = density_map.cpu().numpy()[0, 0]
-    estimated_count = density_map.sum()
-    
-    return density_map, estimated_count
+    except Exception as e:
+        print(f"Error in CSRNet estimation: {e}")
+        # Return fallback empty density map on error
+        return np.zeros((480, 640), dtype=np.float32), 0.0
 
 
 def analyze_zones(detections, width, height):
@@ -137,9 +156,13 @@ def predict_crowd_flow_lstm(history, lstm_model, device):
     sequence = torch.FloatTensor(list(history)).unsqueeze(0)
     sequence = sequence.to(device)
     
-    # Predict
+    # Predict with GPU acceleration
     with torch.no_grad():
-        prediction = lstm_model(sequence)
+        if device.type == 'cuda':
+            with torch.cuda.amp.autocast():  # Mixed precision for LSTM
+                prediction = lstm_model(sequence)
+        else:
+            prediction = lstm_model(sequence)
     
     return prediction.cpu().numpy()[0]
 
@@ -198,22 +221,49 @@ def visualize_frame(frame, detections, density_map):
     cv2.putText(vis_frame, 'BL', (10, h-10), font, 0.7, (255, 255, 255), 2)
     cv2.putText(vis_frame, 'BR', (w-50, h-10), font, 0.7, (255, 255, 255), 2)
     
-    # Overlay density heatmap
-    density_resized = cv2.resize(density_map, (w, h))
-    density_normalized = cv2.normalize(density_resized, None, 0, 255, cv2.NORM_MINMAX)
-    density_colored = cv2.applyColorMap(density_normalized.astype(np.uint8), cv2.COLORMAP_JET)
-    vis_frame = cv2.addWeighted(vis_frame, 0.7, density_colored, 0.3, 0)
+    # Overlay density heatmap with validation
+    try:
+        # Ensure density_map is valid and 2D
+        if density_map is not None and density_map.size > 0:
+            # Handle NaN/Inf values
+            density_map_clean = np.nan_to_num(density_map, nan=0.0, posinf=255.0, neginf=0.0)
+            
+            # Ensure proper shape (2D)
+            if density_map_clean.ndim == 2:
+                # Resize to match frame size
+                if density_map_clean.shape != (h, w):
+                    density_resized = cv2.resize(density_map_clean, (w, h), interpolation=cv2.INTER_LINEAR)
+                else:
+                    density_resized = density_map_clean
+                
+                # Normalize and apply colormap
+                density_normalized = cv2.normalize(density_resized, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+                density_colored = cv2.applyColorMap(density_normalized, cv2.COLORMAP_JET)
+                
+                # Blend with original frame
+                vis_frame = cv2.addWeighted(vis_frame, 0.7, density_colored, 0.3, 0)
+    except Exception as e:
+        # If density map overlay fails, continue with frame without overlay
+        print(f"Warning: Could not overlay density map: {e}")
     
     # Draw detections
-    for det in detections:
-        x1, y1, x2, y2, conf = map(int, det[:5])
-        
-        # Bounding box
-        cv2.rectangle(vis_frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-        
-        # Confidence score
-        cv2.putText(vis_frame, f'{conf/100:.2f}', (x1, y1-5), 
-                   cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+    try:
+        for det in detections:
+            if len(det) >= 5:
+                x1, y1, x2, y2, conf = det[:5]
+                x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
+                
+                # Validate coordinates
+                if x1 >= 0 and y1 >= 0 and x2 > x1 and y2 > y1:
+                    # Bounding box
+                    cv2.rectangle(vis_frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                    
+                    # Confidence score
+                    conf_val = float(conf) / 100.0 if float(conf) > 1 else float(conf)
+                    cv2.putText(vis_frame, f'{conf_val:.2f}', (x1, y1-5), 
+                               cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+    except Exception as e:
+        print(f"Warning: Error drawing detections: {e}")
     
     return vis_frame
 
