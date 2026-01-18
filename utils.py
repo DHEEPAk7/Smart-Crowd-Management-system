@@ -10,11 +10,44 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 
-def detect_people_yolo(frame, yolo_model):
+def find_available_camera(max_index=5):
     """
-    Detect people using YOLOv5
+    Find first available camera
     
     Args:
+        max_index: Maximum camera index to check
+    
+    Returns:
+        int: Available camera index or -1 if none found
+    """
+    for i in range(max_index):
+        cap = cv2.VideoCapture(i)
+        if cap.isOpened():
+            cap.release()
+            return i
+    return -1
+
+
+def list_available_cameras(max_index=5):
+    """
+    List all available cameras
+    
+    Args:
+        max_index: Maximum camera index to check
+    
+    Returns:
+        list: List of available camera indices
+    """
+    available = []
+    for i in range(max_index):
+        cap = cv2.VideoCapture(i)
+        if cap.isOpened():
+            available.append(i)
+            cap.release()
+    return available
+
+
+def detect_people_yolo(frame, yolo_model):
         frame: numpy array (H, W, 3)
         yolo_model: YOLOv5 model or None
     

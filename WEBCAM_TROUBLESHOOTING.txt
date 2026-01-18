@@ -1,0 +1,173 @@
+WEBCAM TROUBLESHOOTING GUIDE
+============================
+
+ERROR: "Failed to read from webcam"
+===================================
+
+WHAT I FIXED:
+1. Added automatic camera detection to find available cameras
+2. Added camera selection if multiple cameras connected
+3. Added retry logic for frame reading errors
+4. Added error count tracking to prevent infinite loops
+5. Improved error messages with specific troubleshooting steps
+6. Added camera property optimization for better performance
+
+STEP-BY-STEP FIX:
+=================
+
+1. CHECK CAMERA DETECTION
+   - Application now lists all available cameras
+   - If no cameras found, check connection and permissions
+
+2. SELECT CORRECT CAMERA
+   - If multiple cameras, select the one you want
+   - Default is camera 0
+
+3. AUTO-RETRY ON ERROR
+   - Program retries up to 5 times on read errors
+   - Continues if successful
+   - Stops after 5 consecutive failures
+
+4. PERFORMANCE OPTIMIZATIONS
+   - Set buffer size to 1 (reduce latency)
+   - Enable autofocus
+   - Control frame rate at 20 FPS
+
+TROUBLESHOOTING STEPS (If still not working):
+==============================================
+
+STEP 1: Check Camera Permissions
+---------------------------------
+Windows 10/11:
+  1. Go to Settings > Privacy & Security > Camera
+  2. Ensure "Camera access" is ON
+  3. Make sure Python has camera permission
+  4. Restart the application if you changed settings
+
+STEP 2: Check Other Applications
+---------------------------------
+Common apps that use webcam:
+  - Zoom
+  - Microsoft Teams
+  - Discord
+  - Skype
+  - OBS Studio
+  - Any video conferencing app
+
+Solution: Close these apps and restart the application
+
+STEP 3: Restart the Camera
+---------------------------
+1. Go to Device Manager
+2. Find your camera under "Imaging devices"
+3. Right-click > Disable device
+4. Wait 5 seconds
+5. Right-click > Enable device
+6. Restart the application
+
+STEP 4: Test Camera with Windows
+--------------------------------
+1. Open Settings > System > Camera
+2. Test webcam works in "Camera app"
+3. If it works there, the issue is with the app
+4. If it doesn't work, it's a system camera issue
+
+STEP 5: Update Camera Drivers
+------------------------------
+1. Go to Device Manager
+2. Right-click camera > Update driver
+3. Search for updates online
+4. Restart computer
+5. Try application again
+
+STEP 6: Test with Simple Script
+--------------------------------
+Run this to test camera directly:
+
+python -c "
+import cv2
+cam = cv2.VideoCapture(0)
+if cam.isOpened():
+    ret, frame = cam.read()
+    if ret:
+        print('Camera works!')
+    else:
+        print('Camera opened but cannot read frames')
+else:
+    print('Cannot open camera')
+cam.release()
+"
+
+If this works, camera is fine. Issue is with app.
+
+STEP 7: Try Different Camera Index
+-----------------------------------
+If you have multiple cameras, try:
+
+python -c "
+import cv2
+for i in range(5):
+    cam = cv2.VideoCapture(i)
+    if cam.isOpened():
+        print(f'Camera {i} available')
+        cam.release()
+"
+
+Use the index shown in the application selector.
+
+ADVANCED: USB/Format Issues
+---------------------------
+Some cameras need specific formats:
+  1. Try different USB port (back of computer preferred)
+  2. Check if camera works on different computer
+  3. Try different camera (borrow one to test)
+
+LAST RESORT: Reinstall OpenCV
+------------------------------
+If nothing works:
+
+pip uninstall opencv-python -y
+pip install opencv-python
+
+Then restart application.
+
+NEW FEATURES IN FIXED VERSION:
+==============================
+✓ Auto-detect available cameras
+✓ Camera selection if multiple cameras
+✓ Retry logic for connection drops
+✓ Better error messages
+✓ Graceful degradation
+✓ Camera property optimization
+✓ Frame flip for selfie view
+
+USAGE TIPS:
+===========
+1. Start with webcam checkbox
+2. Wait 2-3 seconds for camera to initialize
+3. Allow Windows to access camera if prompted
+4. Check FPS counter in status
+5. Can stop anytime with checkbox
+
+WHAT THE ERROR NUMBERS MEAN:
+=============================
+"Webcam read error (1/5)" = First retry
+"Webcam read error (5/5)" = Last retry before stop
+
+If you see this, camera likely disconnected or in use.
+
+STILL NOT WORKING?
+==================
+Try these in order:
+1. Restart computer
+2. Update Windows
+3. Update camera drivers
+4. Check BIOS for USB power settings
+5. Disable and re-enable camera in Device Manager
+6. Try the camera with built-in Windows Camera app
+
+If Windows Camera app works but our app doesn't:
+- The issue is likely with Python/OpenCV setup
+- Reinstall Python or OpenCV as shown above
+
+Contact support with error message shown in terminal.
