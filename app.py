@@ -11,6 +11,7 @@ import numpy as np
 from collections import deque
 import time
 from PIL import Image
+import matplotlib.pyplot as plt
 
 # Import custom modules
 from models import initialize_models
@@ -208,7 +209,7 @@ def process_image_mode(csrnet, lstm, yolo, device, density_threshold,
             st.metric("🎯 Avg Confidence", f"{stats['avg_confidence']:.2f}")
         
         # Display annotated image
-        st.image(vis_frame, caption="Analysis Result", use_container_width=True)
+        st.image(vis_frame, caption="Analysis Result", use_column_width=True)
         
         # Alerts section
         if alerts:
@@ -224,11 +225,15 @@ def process_image_mode(csrnet, lstm, yolo, device, density_threshold,
             
             with viz_col1:
                 if show_heatmap:
-                    st.pyplot(create_density_heatmap(density_map))
+                    fig = create_density_heatmap(density_map)
+                    st.pyplot(fig)
+                    plt.close(fig)
             
             with viz_col2:
                 if show_zones:
-                    st.pyplot(create_zone_chart(zones))
+                    fig = create_zone_chart(zones)
+                    st.pyplot(fig)
+                    plt.close(fig)
         
         # Zone details
         with st.expander("📍 Zone Details"):
@@ -296,7 +301,7 @@ def process_video_mode(csrnet, lstm, yolo, device, density_threshold,
                 vis_frame = visualize_frame(frame, detections, density_map)
                 
                 # Update display
-                stframe.image(vis_frame, channels="RGB", use_container_width=True)
+                stframe.image(vis_frame, channels="RGB", use_column_width=True)
                 
                 # Stats
                 with stats_placeholder.container():
@@ -321,7 +326,9 @@ def process_video_mode(csrnet, lstm, yolo, device, density_threshold,
                 # Charts
                 if show_timeline and len(st.session_state.history) > 1:
                     with charts_placeholder.container():
-                        st.pyplot(create_timeline_chart(list(st.session_state.history)))
+                        fig = create_timeline_chart(list(st.session_state.history))
+                        st.pyplot(fig)
+                        plt.close(fig)
             
             time.sleep(0.03)  # Control playback speed
         
@@ -375,7 +382,7 @@ def process_webcam_mode(csrnet, lstm, yolo, device, density_threshold,
             vis_frame = visualize_frame(frame, detections, density_map)
             
             # Display
-            FRAME_WINDOW.image(vis_frame, channels="RGB", use_container_width=True)
+            FRAME_WINDOW.image(vis_frame, channels="RGB", use_column_width=True)
             
             # Stats
             with stats_placeholder.container():
