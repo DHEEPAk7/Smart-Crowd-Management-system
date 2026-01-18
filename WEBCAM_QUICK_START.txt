@@ -1,0 +1,79 @@
+QUICK START - WEBCAM MODE
+=========================
+
+Your camera is working! Here's how to use it:
+
+STEP 1: Close All Other Applications
+====================================
+Close these if running:
+- Zoom
+- Microsoft Teams  
+- Discord
+- Skype
+- Google Meet
+- OBS Studio
+- Any other video app
+
+STEP 2: Run the Application
+===========================
+Open PowerShell and run:
+
+streamlit run app.py
+
+STEP 3: Select Webcam Mode
+==========================
+1. Wait for app to load (30 seconds first time)
+2. On the left sidebar, select "Use Webcam"
+3. If you see "No cameras detected", restart and go back to Step 1
+
+STEP 4: Start the Webcam
+========================
+1. Click the checkbox "Start Webcam"
+2. You'll see "Warming up camera..." message
+3. Wait 2-3 seconds
+4. You should see your live video!
+
+STEP 5: View Your Analysis
+===========================
+Once running, you'll see:
+- Real-time video with detection boxes
+- Person count and crowd density
+- Alerts for high density
+- Frame rate and status
+
+STEP 6: Stop
+============
+Uncheck "Start Webcam" to stop
+
+TROUBLESHOOTING:
+================
+
+If you see "No webcam detected":
+  1. Check USB cable is connected
+  2. Close other apps (especially Zoom/Teams)
+  3. Restart the application
+  4. Try: python diagnose_camera.py
+
+If you see "Failed to read from webcam":
+  1. Click "Start Webcam" again
+  2. Wait for "Warming up camera..." message
+  3. If still fails, try: python diagnose_camera.py
+
+If camera is very slow:
+  1. Close other applications
+  2. Reduce screen resolution
+  3. Check CPU usage in Task Manager
+
+HELP:
+=====
+For detailed troubleshooting:
+Read: WEBCAM_TROUBLESHOOTING.txt
+
+To test camera directly:
+Run: python diagnose_camera.py
+
+Your camera status:
+- Camera 0: AVAILABLE
+- Resolution: 640x480
+- FPS: 30
+- Status: WORKING

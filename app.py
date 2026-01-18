@@ -418,12 +418,15 @@ def process_webcam_mode(csrnet, lstm, yolo, device, conf_threshold,
         # Set camera properties for better performance
         cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
         cap.set(cv2.CAP_PROP_AUTOFOCUS, 1)
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
         
         # Try opening with different backends if needed
         if not cap.isOpened():
             st.warning(f"Camera {selected_camera} failed with default backend. Trying alternative...")
             # Try opening again
             cap.release()
+            time.sleep(0.5)  # Wait before retry
             cap = cv2.VideoCapture(selected_camera)
         
         if not cap.isOpened():
@@ -431,7 +434,13 @@ def process_webcam_mode(csrnet, lstm, yolo, device, conf_threshold,
             st.error("1. Restart the application")
             st.error("2. Check if other applications are using the webcam")
             st.error("3. Grant camera permissions if prompted by Windows")
+            st.error("4. Try running: python diagnose_camera.py to test camera")
             return
+        
+        # Warm up camera - read a few frames
+        st.info("Warming up camera...")
+        for _ in range(5):
+            cap.read()
         
         frame_count = 0
         error_count = 0
